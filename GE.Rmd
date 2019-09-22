@@ -1,0 +1,87 @@
+---
+title: "GENCODE exercise"
+output: html_notebook
+---
+```{r}
+library(tidyverse)
+```
+
+안녕하세요 4인조 그룹
+여러분이 다음시간에 같이 풀 문제는 GENCODE를 이용하여,
+
+1. 유전자(gene)들만 선택을 합니다. 여기에서 gene_id, gene_name, hgnc_id, gene_type, chromosome, start, end, strand를 갖는 data frame을 만들고, txt 파일로 저장합니다. 이때 hgnc와 ccds 정보가 부재한 유전자들은 0으로 표시합니다.
+
+```{r}
+da<-d1%>%filter(feature_type == "gene")
+da$gene_id <- as.character(do.call(rbind.data.frame, strsplit(d1$info, 'gene_id\\s+"'))[[2]])
+head(d1$info)
+head(da$gene_id)
+```
+
+```{r}
+da$gene_id <- as.character(do.call(rbind.data.frame, strsplit(da$gene_id, '\"'))[[1]])
+head(da$gene_id)
+```
+
+이 작업을 각 col에 대해서 반복하면 되지않을까?
+
+```{r}
+da$gene_type <- as.character(do.call(rbind.data.frame, strsplit(d1$info, 'gene_type\\s+"'))[[2]])
+da$gene_type <- as.character(do.call(rbind.data.frame, strsplit(da$gene_type, '\"'))[[1]])
+da$gene_name <- as.character(do.call(rbind.data.frame, strsplit(d1$info, 'gene_name\\s+"'))[[2]])
+da$gene_name <- as.character(do.call(rbind.data.frame, strsplit(da$gene_name, '\"'))[[1]])
+da$hgnc_id <- as.character(do.call(rbind.data.frame, strsplit(d1$info, 'hgnc_id\\s+"'))[[2]])
+da$hgnc_id <- as.character(do.call(rbind.data.frame, strsplit(da$hgnc_id, '\"'))[[1]])
+```
+
+```{r}
+for(i in 1:60603){
+  a <- gsub('gene_id', '0', da[i, 'hgnc_id'])
+  return(a)
+}
+#??????
+```
+
+```{r}
+da$hgnc_id <- ifelse(grepl('hgnc', da$info)=='TRUE', da$hgnc_id, '0')
+```
+
+여기서 "grepl(a, b)" 함수는 b에 a가 있는지 없는지 보여주는 함수.
+gsub가 왜 안되는지 함 생각해보자!
+
+```{r}
+d_gene <- select(da, chrom, start, end, strand, gene_id, gene_name, gene_type, hgnc_id)
+#txt 파일로 저장하는법 찾아보자.
+write.table(d_gene, "d_gene")
+top_frac(d_gene, 10)
+```
+
+cf)top_frac(d, n)은 top_n의 반대.
+
+
+
+2. gene biotype에 따라 hgnc 정보 존재 여부를 계수합니다. 
+
+즉, gene_type에 따라 hgnc가 몇개나 있는지 찾기.
+
+```{r}
+d_gene%>%group_by(gene_type)%>%filter(hgnc_id!=0)%>%count(.)
+```
+
+문제가 이 뜻이 맞겠지....?
+
+
+
+3. hgnc 여부에 따라 level을 나눕니다. level은 transcript_support_level이 아니라, 그냥 level입니다.
+
+이게 뭔소리고
+있으면 1, 없으면 0 이런식인가...?
+
+```{r}
+d_gene$levels <- ifelse(d_gene$hgnc_id=="0", 0, 1)
+d_gene$levels <- factor(d_gene$levels)
+d_gene%>%select(chrom, start, end, strand, gene_id, gene_name, gene_type, hgnc_id)
+levels(d_gene$levels)
+```
+
+이걸 의도하신게 맞나 뭔가 찝찝한데 수업시간화이팅
