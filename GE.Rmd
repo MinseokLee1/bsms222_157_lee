@@ -33,6 +33,26 @@ da$gene_name <- as.character(do.call(rbind.data.frame, strsplit(da$gene_name, '\
 da$hgnc_id <- as.character(do.call(rbind.data.frame, strsplit(d1$info, 'hgnc_id\\s+"'))[[2]])
 da$hgnc_id <- as.character(do.call(rbind.data.frame, strsplit(da$hgnc_id, '\"'))[[1]])
 ```
+```{r}
+da$level <- as.character(do.call(rbind.data.frame, strsplit(d1$info, 'level\\s+'))[[2]])
+da$level <- as.character(do.call(rbind.data.frame, strsplit(da$level, ';'))[[1]])
+```
+
+```{r}
+#cf. do.call 대신 separate함수 사용
+d2 = separate(d1, info, 
+              sep = '"; gene_type', 
+              into = c('gene_id', 'rest'), 
+              remove = F) %>%
+  separate(., gene_id, 
+           sep = 'gene_id "', 
+           into = c('rest', 'gene_id'), 
+           remove = F) %>%
+  separate(., gene_id, 
+           sep = '\\.', 
+           into = c('gene_id', 'rest'), remove = F) %>%
+  select(-rest)
+```
 
 ```{r}
 for(i in 1:60603){
@@ -76,12 +96,28 @@ d_gene%>%group_by(gene_type)%>%filter(hgnc_id!=0)%>%count(.)
 
 이게 뭔소리고
 있으면 1, 없으면 0 이런식인가...?
+아님 그냥 그 info에 있는 level을 쓰는건가?
 
 ```{r}
 d_gene$levels <- ifelse(d_gene$hgnc_id=="0", 0, 1)
-d_gene$levels <- factor(d_gene$levels)
+dl <- d_gene%>%select(levels)
 d_gene%>%select(chrom, start, end, strand, gene_id, gene_name, gene_type, hgnc_id)
-levels(d_gene$levels)
+a <- table(dl)
+a
 ```
 
 이걸 의도하신게 맞나 뭔가 찝찝한데 수업시간화이팅
+
+아니고 info에 있는 level대로 나눈다면
+
+```{r}
+dlv<-da%>%select(level)
+head(dlv)
+b <- table(dlv)
+b
+```
+
+```{r}
+rbind(a, b)
+```
+
