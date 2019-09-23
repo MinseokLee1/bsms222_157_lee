@@ -99,11 +99,11 @@ d_gene%>%group_by(gene_type)%>%filter(hgnc_id!=0)%>%count(.)
 아님 그냥 그 info에 있는 level을 쓰는건가?
 
 ```{r}
-d_gene$levels <- ifelse(d_gene$hgnc_id=="0", 0, 1)
-dl <- d_gene%>%select(levels)
+d_gene$level<-da$level
+d_gene$hgnc_yes <- ifelse(d_gene$hgnc_id=="0", 0, 1)
+dl <- d_gene%>%select(hgnc_yes, level)
 d_gene%>%select(chrom, start, end, strand, gene_id, gene_name, gene_type, hgnc_id)
-a <- table(dl)
-a
+head(dl)
 ```
 
 이걸 의도하신게 맞나 뭔가 찝찝한데 수업시간화이팅
@@ -111,13 +111,7 @@ a
 아니고 info에 있는 level대로 나눈다면
 
 ```{r}
-dlv<-da%>%select(level)
-head(dlv)
-b <- table(dlv)
-b
+table(dl)
 ```
 
-```{r}
-rbind(a, b)
-```
-
+이건지 모르겠지만 아무튼
