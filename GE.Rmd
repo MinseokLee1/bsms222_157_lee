@@ -85,7 +85,7 @@ cf)top_frac(d, n)은 top_n의 반대.
 즉, gene_type에 따라 hgnc가 몇개나 있는지 찾기.
 
 ```{r}
-d_gene%>%group_by(gene_type)%>%filter(hgnc_id!=0)%>%count(.)
+d_gene%>%group_by(gene_type, hgnc_id)%>%count(gene_type, hgnc_id)
 ```
 
 문제가 이 뜻이 맞겠지....?
@@ -94,9 +94,9 @@ d_gene%>%group_by(gene_type)%>%filter(hgnc_id!=0)%>%count(.)
 
 3. hgnc 여부에 따라 level을 나눕니다. level은 transcript_support_level이 아니라, 그냥 level입니다.
 
-이게 뭔소리고
-있으면 1, 없으면 0 이런식인가...?
-아님 그냥 그 info에 있는 level을 쓰는건가?
+a. 일단 hgnc_id가 있으면 1, 없으면 0으로 나누고
+b. level에 따라 얘를 다시 나눈 후
+c. 둘을 하나의 table로 합치자.
 
 ```{r}
 d_gene$level<-da$level
@@ -113,5 +113,3 @@ head(dl)
 ```{r}
 table(dl)
 ```
-
-이건지 모르겠지만 아무튼
