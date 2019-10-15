@@ -1,0 +1,186 @@
+---
+title: "SCN2A: Mutation prediction scores for PolyPhen, SIFT, and MPC (by Consequence)"
+output: html_notebook
+---
+
+# Data loading
+
+```{bash}
+#wget https://www.dropbox.com/s/nxd8s6dppyd7uml/table.scn2a.vep_20190916.filtered.txt
+#wget https://www.dropbox.com/s/56nm62vd58v95fq/table.scn2a.vep_20190916.headers.txt
+```
+
+```{r}
+d1<-read.table("table.scn2a.vep_20190916.filtered.txt", sep='\t', header=T)
+library(tidyverse)
+```
+주어진 데이터를 d1이라 명명한다.
+
+# Data munging
+
+기본 정보부터 보자.
+
+```{r}
+nrow(d1)
+names(d1)
+head(d1, 20)
+```
+
+header 들어가서 내가 관심있는 네 variance에 관한 내용을 찾아보자.
+Consequence : Consequence type
+PolyPhen : PolyPhen prediction and/or score
+SIFT : SIFT prediction and/or score
+MPC : MPC score
+
+각 score들의 의미를 좀더 뜯어본다면
+
+PP2(PolyPhen-2) score : predicts the possible impact of an amino acid substitution on the structure and function of a human protein. 1에 가까울수록 유해하고 0에 가까울수록 괜찮은 거라고 한다.
+SIFT score : predicts whether an amino acid substitution affects protein function. 다만 여기는 기준이 조금 달라서 0-0.05까지 위험, 0.05-1까지 괜찮은 수준. 1.0에 가까울수록 영향이 없는 것이라고 한다.
+MPC score : Missense badness, PolyPhen-2, and Constraint(From Kaitlin E. Samocha et al. , 2017). 숫자가 클수록 case에 기여하는 영향이 크다고 한다. missense variant 한정으로 쓰이는 지표.
+
+```{r}
+d1%>%
+  select(Consequence, PolyPhen, SIFT, MPC)%>%
+  filter(Consequence=='synonymous_variant')%>%
+  group_by(Consequence, PolyPhen, SIFT, MPC)%>%
+  count()
+```
+
+보다시피 세 지표가 모두 amino acid의 변화를 전제로 하고 있기 때문에 synonymous variant의 경우 모두 세 score의 정보가 없다. 따라서 이는 논의 대상에서 제외한다.
+
+앞서 찾아본 MPC의 의미를 확인해 본다.
+
+```{r}
+d1%>%
+  mutate(MPC_exist=ifelse(MPC=='-', 'N', 'Y'))%>%
+  select(Consequence, MPC_exist)%>%
+  filter(MPC_exist=='Y')%>%
+  group_by(Consequence)%>%
+  count()
+```
+
+앞서 언급했던 것처럼, MPC의 경우 missense variant가 아닐 경우 존재하지 않는다는 것 역시 확인할 수 있다. 따라서 이외의 variant type에서는 MPC를 고려하지 않기로 한다.
+
+```{r}
+#우선 PP2와 SIFT를 수치화하여 plot에 나타낼 수 있게 하자.
+a<-d1$PolyPhen
+PP2_score<-gsub("[^0-9, ., -]", "", a)
+b<-d1$SIFT
+SIFT_score<-gsub("[^0-9, ., -]", "", b)
+d_scn2a<-d1%>%
+  mutate(PP2_score=PP2_score)%>%
+  mutate(SIFT_score=SIFT_score)
+#이제 우리가 다루는 data set은 PP2와 SIFT가 모두 수치화되어 있는 d_scn2a가 된다.
+```
+
+새로 만든 column인 PP2_score와 SIFT_score에서의 결측치 분포를 확인해보자.
+
+```{r}
+d_scn2a%>%
+  select(PP2_score, SIFT_score)%>%
+  filter(PP2_score=='-'&SIFT_score!='-')
+d_scn2a%>%
+  select(PP2_score, SIFT_score)%>%
+  filter(PP2_score!='-'&SIFT_score=='-')
+d_scn2a%>%
+  select(PP2_score, SIFT_score)%>%
+  filter(PP2_score=='-'&SIFT_score=='-')%>%
+  nrow()
+```
+
+이상에서 PP2 score가 결측이라면 SIFT도 반드시 결측임을 알 수 있다. Consequence에 따른 결측치의 분포도 확인해 보자.
+
+```{r}
+d_scn2a%>%
+  select(Consequence)%>%
+  group_by(Consequence)%>%
+  table()
+d_scn2a%>%
+  select(Consequence, PP2_score)%>%
+  group_by(Consequence)%>%
+  filter(PP2_score=='-')%>%
+  table()
+```
+
+두 table을 비교해보면 missense variant를 제외한 다른 type의 variant에서는 PP2 score와 SIFT score는 계산되지 않는다는 것을 알 수 있다. 따라서 plot의 범위를 missense variant로 한정한다.
+
+논의 대상이 missense variant로 한정되었으니 이들과 MPC의 결측치에도 어떠한 관계가 있는지 살펴본다.
+
+```{r}
+d_scn2a%>%
+  select(PP2_score, MPC)%>%
+  filter(PP2_score=='-'&MPC!='-')
+d_scn2a%>%
+  select(PP2_score, MPC)%>%
+  filter(PP2_score!='-'&MPC=='-')
+d_scn2a%>%
+  select(PP2_score, MPC)%>%
+  filter(PP2_score=='-'&MPC=='-')%>%
+  nrow()
+```
+
+마찬가지로 PP2와 MPC 역시도 같은 한정된 논의 대상을 갖는다는 것을 볼 수 있다.
+즉 PP2, SIFT, MPC 세 변수는 동시에 전부 존재하거나, 동시에 전부 존재하지 않는다.
+
+PP2와 SIFT에 수치 정보 외에도 분류 정보가 있는데, 나뉘는 구간을 조사해보자.
+
+```{r}
+#아쉽게도 지금 떠오르는 가장 좋은 방법은 전수조사하는 것이다..
+d_scn2a%>%
+  filter(Consequence=='missense_variant'&PolyPhen!='-')%>%
+  select(PolyPhen)%>%
+  table()
+```
+
+```{r}
+d_scn2a%>%
+  filter(Consequence=='missense_variant'&PolyPhen!='-')%>%
+  select(SIFT)%>%
+  table()
+```
+
+
+# Aim
+
+-missense variant에서 지표로 활용되는 PP2, SIFT, MPC 세 변수의 상관관계를 확인한다.
+
+# Plotting
+
+우선 변수들을 플롯에 이쁘게 그릴 수 있도록 continuous로 변환한다.
+```{r}
+d_scn2a$PP2_score<-as.numeric(as.character(d_scn2a$PP2_score))
+d_scn2a$SIFT_score<-as.numeric(as.character(d_scn2a$SIFT_score))
+d_scn2a$MPC<-as.numeric(as.character(d_scn2a$MPC))
+```
+
+
+```{r}
+d_scn2a%>%
+  select(Consequence, PP2_score, SIFT_score, MPC)%>%
+  filter(PP2_score!='-')%>%
+  ggplot(aes(PP2_score, SIFT_score, col=MPC))+
+  geom_jitter(size=1.2, alpha=0.5)+
+  labs(title='SCN2A mutation : Severity scores on missense variant', x='PolyPhen2 score', y='SIFT score')+
+  scale_color_gradientn(colors=rainbow(12))+
+  annotate('segment', x=0.45, xend=0.45, y=0, yend=1.00, col='black', alpha=0.7)+
+  annotate('segment', x=0.91, xend=0.91, y=0, yend=1.00, col='black', alpha=0.7)+
+  annotate('text', x=0.25, y=0.85, label='benign(PP2)')+
+  annotate('text', x=0.70, y=0.85, label='possibly damaging\n(PP2)')+
+  annotate('text', x=0.98, y=0.85, label='probably\ndamaging\n(PP2)')+
+  annotate('segment', x=0, xend=1, y=0.05, yend=0.05, col='brown', alpha=0.7)+
+  annotate('text', x=0.7, y=0.60, label='deleterious(SIFT, below line)', col='brown')+
+  annotate('text', x=0.7, y=0.53, label='tolerated(SIFT, above line)', col='brown')+
+  annotate('rect', xmin=0.5, xmax=0.9, ymin=0.49, ymax=0.64, fill='skyblue', alpha=0.2)
+```
+
+SIFT score tag 중 low confidence는 무시하였다.
+
+# Finding
+
+1. SIFT score와 PP2 score의 의미를 찾아보았을 땐 선형적 관계를 보일 것으로 예측하였다. 그러나 plot에서 보이듯 두 변수는 축에 가까이 분포하는 형태의 비선형적 관계를 가진다.
+
+2. PP2와 SIFT이 비슷한 의미를 갖는다면 점들은 y=-x+k의 모양으로 분포했을 것이다. 그러나 plot에서 보는 바와 같이 실제 점들은 축을 따라 분포하는데, 이는 PP2로 예측한 결과와 SIFT로 예측한 결과가 서로 상반되는 경우가 있음을 보여준다. 이 결과는 PP2와 SIFT의 산출 방법에서 쓰이는 각각의 데이터가 다르다는 것을 시사한다.
+
+3. MPC와 PP2는 비교적 선형적인 관계를 가진다. 높은 PP2에서 Outlier도 존재하지만 대체적으로 plot의 왼쪽에는 적색, 오른쪽에는 녹색이 많이 분포하는 것으로 보아 대부분의 MPC는 0~3 미만의 값을 갖는 것으로 보이며, MPC score와 PP2 score의 산출 방법이 상당히 유사하다고 볼 수 있다.
+
+끝.
