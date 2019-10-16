@@ -35,7 +35,9 @@ MPC : MPC score
 각 score들의 의미를 좀더 뜯어본다면
 
 PP2(PolyPhen-2) score : predicts the possible impact of an amino acid substitution on the structure and function of a human protein. 1에 가까울수록 유해하고 0에 가까울수록 괜찮은 거라고 한다.
+
 SIFT score : predicts whether an amino acid substitution affects protein function. 다만 여기는 기준이 조금 달라서 0-0.05까지 위험, 0.05-1까지 괜찮은 수준. 1.0에 가까울수록 영향이 없는 것이라고 한다.
+
 MPC score : Missense badness, PolyPhen-2, and Constraint(From Kaitlin E. Samocha et al. , 2017). 숫자가 클수록 case에 기여하는 영향이 크다고 한다. missense variant 한정으로 쓰이는 지표.
 
 ```{r}
