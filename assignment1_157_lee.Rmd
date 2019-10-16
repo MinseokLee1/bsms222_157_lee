@@ -168,12 +168,13 @@ d_scn2a%>%
   annotate('text', x=0.70, y=0.85, label='possibly damaging\n(PP2)')+
   annotate('text', x=0.98, y=0.85, label='probably\ndamaging\n(PP2)')+
   annotate('segment', x=0, xend=1, y=0.05, yend=0.05, col='brown', alpha=0.7)+
-  annotate('text', x=0.7, y=0.60, label='deleterious(SIFT, below line)', col='brown')+
-  annotate('text', x=0.7, y=0.53, label='tolerated(SIFT, above line)', col='brown')+
+  annotate('text', x=0.7, y=0.60, label='tolerated(SIFT, above line)', col='brown')+
+  annotate('text', x=0.7, y=0.53, label='deleterious(SIFT, below line)', col='brown')+
   annotate('rect', xmin=0.5, xmax=0.9, ymin=0.49, ymax=0.64, fill='skyblue', alpha=0.2)
 ```
 
 SIFT score tag 중 low confidence는 무시하였다.
+
 
 # Finding
 
@@ -181,8 +182,10 @@ SIFT score tag 중 low confidence는 무시하였다.
 
 2. PP2와 SIFT이 비슷한 의미를 갖는다면 점들은 y=-x+k의 모양으로 분포했을 것이다. 그러나 plot에서 보는 바와 같이 실제 점들은 축을 따라 분포하는데, 이는 PP2로 예측한 결과와 SIFT로 예측한 결과가 서로 상반되는 경우가 있음을 보여준다(원점 근처에 분포하는 점들). 이 결과는 PP2와 SIFT의 산출 방법에서 쓰이는 각각의 데이터가 다르다는 것을 시사한다.
 
-3. 전체적인 분포가 왼쪽 아래로 쏠려 있음을 볼 수 있다. SIFT를 바탕으로는 치명적이라고 해석되는 variant들이 PP2로 보았을 땐 그렇지 않은 경우는 있지만, 그 반대의 경우는 이 plot에서는 나타나지 않는다. 정확한 PP2와 SIFT의 산출 방법은 알지 못하지만, SIFT가 PP2에 비해 위험 요인을 좀 더 넓게 보고 있다고 해석할 수 있을 것이다.
+3. 전체적인 분포가 왼쪽 아래로 쏠려 있음을 볼 수 있다. SIFT를 바탕으로는 치명적이라고 해석되는 variant들이 PP2로 보았을 땐 그렇지 않은 경우는 있지만, 그 반대의 경우는 이 plot에서는 나타나지 않는다. 정확한 PP2와 SIFT의 산출 방법은 알지 못하지만, SIFT가 PP2에 비해 위험 요인을 좀 더 넓게 보고 있다고 해석할 수 있다.
 
 4. MPC와 PP2는 비교적 선형적인 관계를 가진다. 높은 PP2에서 Outlier도 존재하지만 대체적으로 plot의 왼쪽에는 적색, 오른쪽에는 녹색이 많이 분포하는 것으로 보아 대부분의 MPC는 0~3 미만의 값을 갖는 것으로 보이며, MPC score와 PP2 score의 산출 방법이 상당히 유사하다고 볼 수 있다.
+
+5. 세 score는 모두 gene 수준에서의 variant가 자신이 코드하는 protein의 기능에 얼마나 영향을 미치는지를 수치적으로 나타낸 것이다. 그러나 위와 같이 서로 다른 의미를 내포하고 있으므로, 실험 상황에 따라 적절한 score을 선택하거나 분석시 이 모두를 함께 고려하여야 할 것으로 보인다.
 
 끝.
