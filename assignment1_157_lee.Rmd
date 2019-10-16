@@ -162,7 +162,7 @@ d_scn2a%>%
   filter(PP2_score!='-')%>%
   ggplot(aes(PP2_score, SIFT_score, col=MPC))+
   geom_jitter(size=1.2, alpha=0.5)+
-  labs(title='SCN2A mutation : Severity scores on missense variant', x='PolyPhen2 score', y='SIFT score')+
+  labs(title='SCN2A mutation : Severity prediction scores on missense variant', x='PolyPhen2 score', y='SIFT score')+
   scale_color_gradientn(colors=rainbow(12))+
   annotate('segment', x=0.45, xend=0.45, y=0, yend=1.00, col='black', alpha=0.7)+
   annotate('segment', x=0.91, xend=0.91, y=0, yend=1.00, col='black', alpha=0.7)+
@@ -188,6 +188,6 @@ SIFT score tag 중 low confidence는 무시하였다.
 
 4. MPC와 PP2는 비교적 선형적인 관계를 가진다. 높은 PP2에서 Outlier도 존재하지만 대체적으로 plot의 왼쪽에는 적색, 오른쪽에는 녹색이 많이 분포하는 것으로 보아 대부분의 MPC는 0~3 미만의 값을 갖는 것으로 보이며, MPC score와 PP2 score의 산출 방법이 상당히 유사하다고 볼 수 있다.
 
-5. 세 score는 모두 gene 수준에서의 variant가 자신이 코드하는 protein의 기능에 얼마나 영향을 미치는지를 수치적으로 나타낸 것이다. 그러나 위와 같이 서로 다른 의미를 내포하고 있으므로, 실험 상황에 따라 적절한 score을 선택하거나 분석시 이 모두를 함께 고려하여야 할 것으로 보인다.
+5. 세 score는 모두 gene 수준에서의 variant가 자신이 코드하는 protein의 기능에 얼마나 영향을 미치는지를 예측하여 수치적으로 나타낸 것이다. 그러나 위와 같이 서로 다른 의미를 내포하고 있으므로, 실험 상황에 따라 적절한 score을 선택하거나 분석시 이 모두를 함께 고려하여야 할 것으로 보인다.
 
 끝.
