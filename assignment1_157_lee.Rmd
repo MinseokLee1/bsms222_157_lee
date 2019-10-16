@@ -166,7 +166,7 @@ d_scn2a%>%
   scale_color_gradientn(colors=rainbow(12))+
   annotate('segment', x=0.45, xend=0.45, y=0, yend=1.00, col='black', alpha=0.7)+
   annotate('segment', x=0.91, xend=0.91, y=0, yend=1.00, col='black', alpha=0.7)+
-  annotate('text', x=0.25, y=0.85, label='benign(PP2)')+
+  annotate('text', x=0.25, y=0.85, label='benign\n(PP2)')+
   annotate('text', x=0.70, y=0.85, label='possibly damaging\n(PP2)')+
   annotate('text', x=0.98, y=0.85, label='probably\ndamaging\n(PP2)')+
   annotate('segment', x=0, xend=1, y=0.05, yend=0.05, col='brown', alpha=0.7)+
@@ -176,7 +176,6 @@ d_scn2a%>%
 ```
 
 SIFT score tag 중 low confidence는 무시하였다.
-
 
 # Finding
 
