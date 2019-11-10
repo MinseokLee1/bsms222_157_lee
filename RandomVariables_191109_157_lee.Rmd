@@ -204,8 +204,8 @@ s<-sqrt(mean((x-m)^2))
 
 Using mathematical notation we write:
 
-\mu = \frac{1}{n} \sum_{i=1}^n x_i \\
-\sigma =  \sqrt{\frac{1}{n} \sum_{i=1}^n (x_i - \mu)^2}
+μ=(1/n)∑[1,n](x_i)
+σ=sqrt((1/n)∑[1,n](x_i-μ)^2)
 
 However, be aware that the sd function returns a slightly different result:
 ```{r}
@@ -215,8 +215,8 @@ s-sd(x)
 
 This is because the sd function R does not return the sd of the list, but rather uses a formula that estimates standard deviations of a population from a random sample X1, ..., X_N which, for reasons not discussed here, divide the sum of squares by the N-1.
 
-\bar{X} = \frac{1}{N} \sum_{i=1}^N X_i, \,\,\,\,
-s =  \sqrt{\frac{1}{N-1} \sum_{i=1}^N (X_i - \bar{X})^2}
+X`=(1/N)∑[1,N](Xi)
+s=sqrt((1/(N-1))∑[1,N](Xi-X`)^2)
 
 You can see that this is the case by typing:
 ```{r}
