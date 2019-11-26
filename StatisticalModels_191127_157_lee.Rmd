@@ -305,8 +305,8 @@ The answer is "d".
 
 9. In the right side of this model only ε_ij is a random variable. The other two are constants. What is the expected value of Y_ij?
 
+becuz E(ε_ij)=0, so E(Y_ij)=d+bi.
 ```{r}
-#becuz E(ε_ij)=0, so E(Y_ij)=d+bi.
 mean(polls$spread)
 ```
 
@@ -366,15 +366,15 @@ y2_se
 
 14. Using what we learned by answering the questions above, what is the expected value of ¯Y2-¯Y1?
 
+E(¯Y2-¯Y1)=E(¯Y2)-E(¯Y1).
 ```{r}
-#E(¯Y2-¯Y1)=E(¯Y2)-E(¯Y1).
 y2_hat - y1_hat
 ```
 
 15. Using what we learned by answering the questions above, what is the standard error of ¯Y2-¯Y1?
 
+Becuz ¯Y2 and ¯Y1 are independent, Var(¯Y2-¯Y1)=Var(¯Y2)-Var(¯Y1).
 ```{r}
-#Becuz ¯Y2 and ¯Y1 are independent, Var(¯Y2-¯Y1)=Var(¯Y2)-Var(¯Y1).
 sqrt(abs(y2_se^2 - y1_se^2))
 ```
 
@@ -402,8 +402,8 @@ The answer is "c".
 
 18. We have constructed a random variable that has expected value b2-b1, the pollster bias difference. If our model holds, then this random variable has an approximately normal distribution and we know its standard error. The standard error depends on σ1 and σ2, but we can plug the sample standard deviations we computed above. We started off by asking: is b2-b1 different from 0? Use all the information we have learned above to construct a 95% confidence interval for the difference b2 and b1.
 
+The distribution of ¯Y2-¯Y1 is equal to distribution of b2-b1. So,
 ```{r}
-#The distribution of ¯Y2-¯Y1 is equal to distribution of b2-b1. So,
 m<-y2_hat - y1_hat
 s<-sqrt(abs(y2_se^2 - y1_se^2))
 m+c(-1,1)*1.96*s
@@ -447,7 +447,7 @@ m1<-by_pollster%>%
 m<-by_pollster$mean[2]
 s<-by_pollster$sd[2]
 1-pnorm(m1, m, s)
-#At 5% significance level, m1 is in the rejection area so we can reject the H0.
 ```
+At 5% significance level, m1 is in the rejection area so we can reject the H0.
 
 (ANOVA 얘기가 나왔는데 그게 MSE랑 각각의 Mean Square 값을 직접 구해서 F분포에 집어넣으라는 말인가 했는데 이 교재에 없는 내용이라 일단 이렇게 단순하게 검정했습니다.. 혹시 뭔가 다른 의도가 있는 문제였는지 검토해주시면 감사하겠습니다!)
