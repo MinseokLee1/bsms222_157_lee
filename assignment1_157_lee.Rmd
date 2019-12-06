@@ -125,9 +125,8 @@ d_scn2a%>%
 즉 PP2, SIFT, MPC 세 변수는 동시에 전부 존재하거나, 동시에 전부 존재하지 않는다.
 
 PP2와 SIFT에 수치 정보 외에도 분류 정보가 있는데, 나뉘는 구간을 조사해보자.
-
+(아쉽게도 지금 떠오르는 가장 좋은 방법은 전수조사하는 것이다.. 지표와 수치값을 서로 다른 column으로 분리해서 수치를 numeric으로 변환한 뒤 max나 min을 이용하여 지표가 바뀌는 부분을 찾는 방법을 쓰면 정리할 수 있겠지만, 현재 다루는 데이터의 row 수가 많지 않으므로 전수조사 방법도 시간적으로 나쁘지 않은 선택으로 보인다.)
 ```{r}
-#아쉽게도 지금 떠오르는 가장 좋은 방법은 전수조사하는 것이다.. column을 따로 분리해서 sorting하는 방법을 쓰면 정리할 수 있겠지만, 현재 다루는 데이터의 row 수가 크지 않으므로 전수조사 방법도 나쁘지 않은 선택으로 보인다.
 d_scn2a%>%
   filter(Consequence=='missense_variant'&PolyPhen!='-')%>%
   select(PolyPhen)%>%
@@ -160,10 +159,10 @@ d_scn2a$MPC<-as.numeric(as.character(d_scn2a$MPC))
 d_scn2a%>%
   select(Consequence, PP2_score, SIFT_score, MPC)%>%
   filter(PP2_score!='-')%>%
-  ggplot(aes(PP2_score, SIFT_score, col=MPC))+
-  geom_jitter(size=1.2, alpha=0.5)+
+  ggplot(aes(PP2_score, SIFT_score, col=log(MPC)))+
+  geom_jitter(size=0.7, alpha=0.5)+
   labs(title='SCN2A mutation : Severity prediction scores on missense variant', x='PolyPhen2 score', y='SIFT score')+
-  scale_color_gradientn(colors=rainbow(12))+
+  scale_color_continuous(type="viridis", name="log(MPC)")+
   annotate('segment', x=0.45, xend=0.45, y=0, yend=1.00, col='black', alpha=0.7)+
   annotate('segment', x=0.91, xend=0.91, y=0, yend=1.00, col='black', alpha=0.7)+
   annotate('text', x=0.25, y=0.85, label='benign\n(PP2)')+
@@ -185,8 +184,28 @@ SIFT score tag 중 low confidence는 무시하였다.
 
 3. 전체적인 분포가 왼쪽 아래로 쏠려 있음을 볼 수 있다. SIFT를 바탕으로는 치명적이라고 해석되는 variant들이 PP2로 보았을 땐 그렇지 않은 경우는 있지만, 그 반대의 경우는 이 plot에서는 나타나지 않는다. 정확한 PP2와 SIFT의 산출 방법은 알지 못하지만, SIFT가 PP2에 비해 위험 요인을 좀 더 넓게 보고 있다고 해석할 수 있다.
 
-4. MPC와 PP2는 비교적 선형적인 관계를 가진다. 높은 PP2에서 Outlier도 존재하지만 대체적으로 plot의 왼쪽에는 적색, 오른쪽에는 녹색이 많이 분포하는 것으로 보아 대부분의 MPC는 0~3 미만의 값을 갖는 것으로 보이며, MPC score와 PP2 score의 산출 방법이 상당히 유사하다고 볼 수 있다.
+4. MPC와 PP2는 비교적 선형적인 관계를 가진다. 높은 PP2에서 Outlier도 존재하지만 대체적으로 plot의 왼쪽에는 남색, 오른쪽에는 녹색이 많이 분포하는 것으로 보아 대부분의 MPC는 0~3 미만의 값을 갖는 것으로 보이며(자연로그를 취했을 때 음수~1에 해당하는 색이 전체적으로 다수 분포한다), MPC score와 PP2 score의 산출 방법이 상당히 유사하다고 볼 수 있다.
 
 5. 세 score는 모두 gene 수준에서의 variant가 자신이 코드하는 protein의 기능에 얼마나 영향을 미치는지를 예측하여 수치적으로 나타낸 것이다. 그러나 위와 같이 서로 다른 의미를 내포하고 있으므로, 실험 상황에 따라 적절한 score을 선택하거나 분석시 이 모두를 함께 고려하여야 할 것으로 보인다.
+
+# modification (assignment 2)
+
+## comment 1
+-"possibly damaging and probably damaging are worded differently since those two words are synonyms and graph might be misinterpreted." 
+: 데이터셋에서 그러한 용어를 사용했으므로 임의로 바꿀 수 없다고 판단, 수정하지 않았다.
+
+-"Futhermore, author seriously needs to consider the color palette to color-blind friendly with many dots colored." 
+: 반영하여 수정하였다. MPC를 그대로 적용할 경우 데이터 분포상 alpha를 줘도 색이 겹쳐 차이가 눈에 띄지 않아 MPC에 log를 취하여 색을 적용했다.
+
+## comment 2
+-"하지만 MPC를 색깔 정보로 추가하는 것은 MPC 지표 자체에 대한 평가를 위한 plotting이 아니라면, 중복되는 데이터로 본 그래프에서 추가할 수 있는 정보의 차원을 소모하는 꼴이라고 생각된다. MPC 지표를 생략하고 해당 지표를 보다 정보를 함축하고 있는 mutant의 종류 등을 포함한다면 더욱 많은 정보를 함의할 수 있을 것이라 생각된다. " 
+: 그러려고 했는데 (기억이 왜곡되지 않았다면) 그 주제가 중복이라 하지 못했던 것 같다. 또한 이 plotting의 목적이 각각의 score의 의미적인 관계를 보는 것이기에 MPC 지표 자체에 대한 평가를 위한 것이 맞다. 따라서 수정하지 않았다(이하의 몇몇 피드백에 대한 답을 이 문장으로 대신한다).
+
+-"따라서 두 지표 모두 Log transformation을 통하여 scatter가 몰려있는 것을 퍼트리고, 각 점들 중 주요한 치환의 표시해주었으면 좋았을 것이라 생각된다." 이하의 피드백 전부 
+: 플롯 자체보다 내용에 관한 피드백을 주셨는데, 우선 이 데이터를 통해 처음 이 score들을 배운 입장에서, 한단계 더 나아가 이 지표들을 통해 어떻게 생물학적 정보를 그려낼 수 있는가에 대해 생각해 보도록 해주셔서 감사하다. 우선 scatter를 퍼트리지 않은건 지적해주신 "세 score 자체의 관계"를 주제로 삼았기 때문에 수치 data에 손을 대서 예쁜 plot을 만드는 것 보다 있는 그대로의 경향성을 파악하기 위함이었고, 그 결과로 Finding의 3번과 같은 내용을 이끌어 낼 수 있었다. 또한 MPC가 PP2와 관련이 있다는 내용 역시 plotting을 통해 찾아낸 정보이다(Finding 4). 세 score의 정의 이외의 사전 정보 없이 거의 zero base 상태에서 plotting을 통해 각각의 의미를 좀 더 자세히 파악하고자 하는 것이 이번 plotting의 목표였으므로, 특별히 현재 플롯에서 수정하지 않는다.
+
+## comment 3
+-"However, the colors of this plot make it somewhat difficult to read the points clearly, the warm colors all blending and making it seems like there is less MPC variation than there really is. I think the key used is also somewhat confusing because there are colors between the variables defined that appear on the plot and are ambiguous to the person reading."
+: 반영하여 수정하였다. geom_jitter의 dot size를 1.2에서 60% 수준인 0.7로 떨어뜨렸다. 더욱 작게 하는 것은 플롯에 빈공간을 너무 많이 만들어 가독성을 조금 떨어뜨린다고 판단, 작성자 본인이 생각하기에 적절한 수준까지 줄였다. 색감은 앞선 피드백을 반영하는 과정에서 바뀌었으나 아무튼 비슷한 색이 겹쳐 보인다는 피드백은 이 색깔이 연속변수를 나타내는 색이기 때문에 그라데이션으로 나타나 알파를 주면서 어쩔 수 없이 나타나는 한계라고 생각한다. 그러나 이 역시도 dot size를 줄이면서 어느 정도 해결하였다.
 
 끝.
