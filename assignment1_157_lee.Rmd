@@ -189,7 +189,7 @@ SIFT score tag 중 low confidence는 무시하였다.
 
 5. 세 score는 모두 gene 수준에서의 variant가 자신이 코드하는 protein의 기능에 얼마나 영향을 미치는지를 예측하여 수치적으로 나타낸 것이다. 그러나 위와 같이 서로 다른 의미를 내포하고 있으므로, 실험 상황에 따라 적절한 score을 선택하거나 분석시 이 모두를 함께 고려하여야 할 것으로 보인다.
 
-# modification (assignment 2)
+# Modification (assignment 2)
 
 ## comment 1
 -"possibly damaging and probably damaging are worded differently since those two words are synonyms and graph might be misinterpreted." 
