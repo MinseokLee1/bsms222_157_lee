@@ -1,0 +1,267 @@
+---
+title: "Statistical Inference and Testing with R basic"
+output: html_notebook
+---
+
+생물통계학 19 2학기 기말고사 대비 겸 통계적 추/검정에 관한 모델링 작업입니다.
+인체생리학 공부하기 싫어서 쓰는거니 이것저것 알고 있는 다양한 내용들을 같이 넣을 생각이예요. 아노바나 t-test같은 것도 하고는 싶지만 시험기간이 허락해주지 않을 것 같아요. 다만 t-test에 대해서는 마지막쯤에 간단히 한 문장 정도 얘기해 볼 수 있겠군요!
+R을 처음 배우거나 고등학교 확통 수준의 통계학을 좀 알고 싶은 사람이 있다면 혹시 참고가 될 지도 모르겠군요. 고등학교 확통 ㅈ밥같아 보이지만 이해하는 게 사실 엄청 어렵고, 그정도만 알아도 어지간한 논문을 읽을 수 있는 수준이 됩니다. p-value와 유의확률 정도만 10분정도 더 배운다면요.
+(이하는 전형적인 생물충의 시각에서 쓰인 겁니다. 사설도 이공계, 특히 생물 연구자들이 이용하는 쪽으로 많이 방향이 잡혀 있어요.)
+
+# Population
+
+```{r}
+library(tidyverse)
+library(dslabs)
+data(heights)
+h<-heights%>%
+  filter(sex=='Male')
+```
+
+우리는 tidyverse, dplyr 코드만 사용할거예요. 왜냐, 다른 분야(순수 통계학만 해도 다른 패키지 많이 쓰더이다. 당장 기억나는 것만 해도 doBy, userfriendlyscience, onewaytests 같은 게 있네요. 근데 아마 우리도 기초 수준을 넘어가서 실험계획법 정도만 가도 얘들 쓰지 않을까 싶습니다. 그래도 베이스는 tidyverse 생태계 안에서 살죠 우리는.)와 다르게 우리는 tidy라는 생태계가 구축되어 있기 때문이죠.
+
+이게 뭔 개소리냐. 데이터의 처리 방식에도 다양한 방법이 있어요. 누군가는 엑셀을 쓰겠고, 누군가는 SAS나 SPSS를 쓰겠죠. 일반적으로는 꽁짜인 요 R을 쓰겠지만, 확실히 어떤 상황에서는 다른 SW가 편한 경우들이 있습니다. 단적인 예로 저는 SAS라는 조온나 비싼 프로그램도 진짜 살짝 배웠는데, testing할때는 그게 진짜 기가맥힙니다. 한번 쭉 짜면 정규성 검정부터 등분산, 아노바나 ttest, 사후검정까지 한번에 다나와요. 문제는 이런 지점에서 발생합니다. 각 분야마다 통계를 사용하는 목적이 다를거고, 그에 따라서 더 자주 사용하는 방법론이나 도구들이 있을 거예요. 그게 다르면 데이터 형식이 다르게 나옵니다. 가령 여기 R에선 .sas7dbat(sas 데이터 형식) 파일을 읽어오는게 쉽지 않아요. 또 .csv가 아닌 .xlsx 파일을 읽어오려면 자바가 필요합니다. 저같은 똥컴 갖고는 자바 설치가 안되니, 읽지를 못하는 슬픈 상황이 생겨요. 게다가 이런 형식뿐만 아니라, 데이터 포맷도 다릅니다. 흔히 '표'를 떠올리면 축이 두개인 표가 생각나죠. 그걸로 쓰면 이거 망합니다. wide format이라고 부르는 형식인데, 기본적인 함수 구동 방식과 조금 달라서 적용이 잘 안돼요.
+
+여기까지 뭔말인지 다 이해 못해도 상관없습니다. 애초에 'tidyverse 생태계' 라는 걸 이해하지 않아도 요 밑의 내용을 보는 데는 전혀 상관없어요. 아무튼 논의를 계속하자면, 결론적으로 연구자들은 tidyverse 생태계를 구축해서 본인들끼리의 작업 능률을 높이는 방법을 택했습니다. 데이터 포맷도 맞추고, 사용하는 함수도 어느 정도 통일하는 식으로 말이죠. 비유하자면, 애플이 디바이스, OS, AI, 앱스토어까지 즈그들끼리 다해 쳐먹는 것과 비슷합니다. 아이폰 아이패드 쓰는데 안드나 윈도우 필요없잖아요?
+
+이런 흐름에 맞게, 우리도 tidyverse 패키지를 사용할겁니다. 패키지 설치하는거나 이런 건 어디선가 적당히 배우셨겠죠. tidyverse 패키지 안에 함수패키지인 dplyr가 들어있습니다. 흔히 쓰는 filter, select 이런 게 dplyr예요(참고로, 각각 [타이디벌스], [디플라이어]라고 발음합니다.).
+
+dslabs에 있는 샘플 데이터 'heights'를 사용할건데 그중에서 남자만 볼게요. 우리가 만든 저 오브젝트 h는 이제부터 이 논의 한정 지구상에 존재하는 모든 남자의 키를 조사한, 모집단(population)의 정보라고 합시다. 다시 말해, 코드를 치는 우리는 저 모집단에 대해 이제부터는 모른다고 치고, 저건 신만이 아는 정보인 거예요.
+
+```{r}
+nrow(h); names(h)
+```
+
+전 세계에 남자가 812명밖에 없다니! 우리는 미개한 인간으로서 저 812명을 절대 다 조사할 수 없다고 가정합시다.
+
+# Aim
+
+뭐할건지 목적을 설정해봅시다. 우리는 몬테카를로 시뮬레이션을 이용해서 sample size가 각각 5, 50, 500일 때의 통계량으로 모평균, 모분산을 추정해 볼겁니다. 그리고 그 추정이 얼마나 적중하는지 여러가지 플롯으로 그려서 확인해볼거고, 검정까지 진행할 수 있으면 해보도록 할게요. 그리고 sample size에 따라 어떻게 그 추정들이 변화하는지 간단하게 논의해 보도록 하겠습니다.
+
+이걸 위해서, 잠깐동안만 신이 되어 볼까요. 실제 상황에서는 parameter들, 즉 모평균같은 놈들은 절대 계산해낼 수 없지만, 우리는 이 추정의 "도구적인 기능"을 보기 위해서 이 짓거릴 하는 거니까, 수치적으로 봐봐야죠. population의 평균과 분산을 계산해보도록 해요.
+```{r}
+h%>%
+  summarize(mu=mean(height), sigma=sd(height))
+```
+
+아, 얘는 인치입니다. 여기 보이는 이 값들이 지구에 존재하는 모든 남자들의 평균 키와 그 표준편차예요. 176센치라, 줜나 크네요.
+
+나중에 쓸테니 얘네 저장하도록 합시다.
+```{r}
+mu<-mean(h$height)
+sigma<-sd(h$height)
+```
+
+# Inference
+
+## Monte carlo simulation and Sampling with N=5
+
+몬-테-카를로 시뮬레이션! 줜나 있어보이지만 사실 겁나 무식한 방법입니다. '여러번 돌려본다'가 몬테카를로의 핵심 방법론이예요.
+
+코드 먼저 보고 들어갑시다. 샘플사이즈 5명의 사람을, 반복수 10000번 뽑아서 추정해보는 시뮬레이션을 해보는 걸로 해요. 주머니에서 5개의 공을 뽑고 기록하는 짓거리를 10000번 한다는 소립니다. 
+
+시작하기 전에,
+```{r}
+class(h)
+```
+
+지금 h는 df이죠. 우리가 관심있는건 just 키니까 얘를 숫자의 벡터로 고쳐 봅시다.
+
+```{r}
+h<-h%>%pull(height)
+class(h)
+```
+
+이제 시뮬레이션을 돌릴 준비가 되었습니다. 해보면
+```{r}
+N<-5
+B<-10000
+set.seed(191213)
+x_hat1<-replicate(B, {
+  x<-sample(h, N, replace=F)
+  mean(x)
+})
+```
+
+짠! R studio를 쓰고계시다면 Environment 탭에 "x_hat1"이라는 오브젝트가 생긴 걸 확인할 수 있습니다. 이 벡터의 각 항은 "랜덤하게 뽑힌 5명의 남자의 키의 평균"을 의미해요.
+
+고등학교때 우리는 이 항들 중 딱 하나만 가지고 모평균을 구간추정하는, 소위 '신뢰구간(Confidence Interval; CI)'라는 걸 열심히 구했습니다. 우리가 지금부터 할 것은 그 CI가 얼마나 잘 들어맞는가예요. 이 10000개의 평균들의 분포를 보면, 중심극한정리(Central Limit Theorem; CLT)에 의해 얘들은 '평균이 샘플이 나온 모집단의 평균인 mu, 분산은 (sigma)^2 / N으로 가는 정규분포'를 따를겁니다(이게 중심극한정리의 정의고, 의미예요). 어디 정말 그런가 봅시다.
+
+1. Histogram과 qq-plot
+
+```{r}
+p11<-data.frame(x_hat1)%>%
+  ggplot(aes(x_hat1))+
+  geom_histogram(col='black', bins = 30)
+p12<-data.frame(x_hat1)%>%
+  ggplot(aes(sample=x_hat1))+
+  geom_qq()+
+  geom_qq_line()
+library(cowplot)
+plot_grid(p11, p12)
+```
+
+짠! 순서대로 설명할게요.
+
+p11은 왼쪽 히스토그램입니다. 테두리 검은색, 막대기 넓이를 30으로 설정한 거고, 각 구간은 크기가 N인 샘플의 평균을 나타낸 겁니다. ggplot을 쓰기 위해 벡터인 x_hat1을 df로 바꿨고, aes()에 x_hat1을 가지고 mapping할거다, 라고 지정해줬고, +로 레이어를 하나씩 추가해서 플롯을 완성했습니다. 쉽죠.
+
+p12는 qq-plot입니다. 점들이 직선에 많이 합치될 수록 정규분포에 가까운 거예요. 정규분포라면 평균과 분산이 얼마든간에 본인 평균에서 양쪽으로 n*(본인 표준편차)만큼 움직였다면 항상 그 밀도확률값은 같겠죠(표준화 작업 거쳐서 N(0,1)로 보내면 같으니까요). 직선(y=x)이 의미하는 게 바로 그거고, 점들이 직선에 일치한다면 그만큼 정규분포에서 보이는 값과 밀도함수값이 같다는 말이 되는 겁니다.
+정규성 테스트하는건 사실 다른 함수 써서 테스트하는 법이 있지만, 우리는 일단 이것만 보고 넘어갈게요. 기각역 채택역 검정은 하지 않겠습니다.
+
+(cf. package cowplot은 plot_grid를 위한 겁니다. 사실 그냥 ggplot2 package만 이용해서 플롯 두개 한방에 그리고 facet 해도 상관은 없습니다.)
+
+2. CI plotting
+
+여기서 볼 건 각 평균별로 CI를 그려서, 모평균을 얼마나 잘 예측하느냐! 를 볼겁니다. 반복수 10000개를 다 보기엔 너무 많으니 상위 100개만 뽑아서 보는 걸로 할게요.
+```{r}
+set.seed(191213)
+inside<-replicate(B, {
+  x<-sample(h, N, replace=F)
+  x_hat<-mean(x)
+  se_hat<-sd(x)/sqrt(N)
+  return(c(x_hat, se_hat))
+})
+d1<-as.data.frame(t(inside))
+d1<-d1%>%
+  rename(x_hat=V1, se_hat=V2)%>%
+  mutate(ci_low=x_hat-pnorm(0.975)*se_hat, ci_high=x_hat+pnorm(0.975)*se_hat, 
+         is_ci=ifelse(mu<=ci_high&mu>=ci_low, T, F), n=seq(1, nrow(d1)))
+head(d1)
+```
+
+설명이 필요합니다. 우선 위의 결과와 똑같은 샘플링을 갖고 하기 위해 set.seed를 추가해 줬어요. 집필 날짜인 2019년 12월 13일로 넣었습니다. 대충 그렇고.
+
+우린 샘플평균 x_hat을 이용해 모평균을 추정하는 거잖아요. 여기엔 CLT가 들어가죠. 반복수 B가 충분히 크니까, 우리는 하나 하나의 x_hat들이 정규분포 (mu, sigma*sqrt(N))을 따른다는 걸 알고 있어요. 그래서 이걸 바탕으로 mu를 구간추정하는 신뢰구간들을 각각 만들어 낸 겁니다. sd 대신 se가 사용되는 이유가 여기에 있어요. 몬테카를로 말미에 return 문으로 매트릭스를 생성해줬습니다. 다만, 이 매트릭스는 byrow라서 row가 먼저 채워집니다. 그래서 df로 만들기 전에 transpose를 해줘야 하죠. 뭐 이하의 inside 매트릭스를 이용한 df 가공 작업은 쭉 따라 읽으면 이해가 될겁니다. 양측 CI 만들어주고, 그 안에 실제 mu가 들어가는지 확인하기 위해 logical vector를 만들어주고, 뭐 그런 과정들입니다.
+
+참고로, 사실 sigma 대신 se를 사용했기 때문에 ci의 양측에는 pt가 들어가야 하지만 얘는 반복수 B가 충분히 크므로 정규분포로 근사하게 됩니다. 따라서 pnorm을 사용해도 무방해요.
+
+사실 이 d1만 봐도 어느정도 적중했는지 알 수 있답니다.
+```{r}
+mean(d1$is_ci)
+```
+
+N이 작아서 그런가, 그지같이 못맞췄네요. 이걸로 알 수 있는건, "신뢰구간 95% != 95%의 확률로 적중한다" 라는 겁니다. 54%밖에 못맞췄잖아요. 신뢰구간이라는 건 단어 어감이 되게 믿음직해서 그렇지, 사실 그냥 저렇게 구하면 대충 100개의 x_hat 갖고 만든 신뢰구간에 95번정도 mu가 포함되어 있더라, 하는 경향성 정도만 얘기하는거고 그다지 믿을만한 게 못된다는 겁니다. 통계학의 기본은 "여태까지 이랬으니 믿든말든 알아서해라. 난 모르겠다. 아님말고" 정도인 것 같아요.
+
+아무튼 이제 저걸 갖고 plot을 그려봅시다. 위에서 100개 정도만 뽑기로 했었죠.
+```{r}
+p13<-d1[1:100,]%>%
+  ggplot(aes(x_hat, n, col=is_ci))+
+  geom_point()+
+  geom_errorbarh(xmin=d1$ci_low[1:100], xmax=d1$ci_high[1:100])+
+  geom_vline(xintercept=mu)
+p13
+```
+
+오... 드럽게 못맞췄군요. 그럼 이제 샘플 사이즈를 늘려볼까요. N이 몇 정도 되어야 얘가 그래도 잘 적중했다 할 수 있을까요?
+
+참고로, 가운데 직선이 실제 모평균 mu이구요, ci 안에 이게 들어가 있으면 T, 아니면 F입니다.
+
+## Sampling with N=50
+
+다른 말 길게 안하고 위의 코드에서 N만 수정하도록 할게요.
+
+```{r}
+N<-50
+B<-10000
+set.seed(191213)
+x_hat2<-replicate(B, {
+  x<-sample(h, N, replace=F)
+  mean(x)
+})
+
+p21<-data.frame(x_hat2)%>%
+  ggplot(aes(x_hat2))+
+  geom_histogram(col='black', bins = 30)
+p22<-data.frame(x_hat2)%>%
+  ggplot(aes(sample=x_hat2))+
+  geom_qq()+
+  geom_qq_line()
+library(cowplot)
+plot_grid(p21, p22)
+
+set.seed(191213)
+inside<-replicate(B, {
+  x<-sample(h, N, replace=F)
+  x_hat<-mean(x)
+  se_hat<-sd(x)/sqrt(N)
+  return(c(x_hat, se_hat))
+})
+d2<-as.data.frame(t(inside))
+d2<-d2%>%
+  rename(x_hat=V1, se_hat=V2)%>%
+  mutate(ci_low=x_hat-pnorm(0.975)*se_hat, ci_high=x_hat+pnorm(0.975)*se_hat, 
+         is_ci=ifelse(mu<=ci_high&mu>=ci_low, T, F), n=seq(1, nrow(d2)))
+mean(d2$is_ci)
+
+p23<-d2[1:100,]%>%
+  ggplot(aes(x_hat, n, col=is_ci))+
+  geom_point()+
+  geom_errorbarh(xmin=d2$ci_low[1:100], xmax=d2$ci_high[1:100])+
+  geom_vline(xintercept=mu)
+p23
+```
+
+와! 쪼끔 늘었어요. 61%정도 적중했네요!
+그리고 qq-plot도 x_hat이 조금 더 정규성을 갖는다, 라는 걸 보여줍니다.
+이제 N을 확 늘려볼게요. 우리가 돈이 많아서, 엄청난 크기의 샘플을 만들었다고 해봅시다.
+
+## Sampling with N=500
+
+```{r}
+N<-500
+B<-10000
+set.seed(191213)
+x_hat3<-replicate(B, {
+  x<-sample(h, N, replace=F)
+  mean(x)
+})
+
+p31<-data.frame(x_hat3)%>%
+  ggplot(aes(x_hat3))+
+  geom_histogram(col='black', bins = 30)
+p32<-data.frame(x_hat3)%>%
+  ggplot(aes(sample=x_hat3))+
+  geom_qq()+
+  geom_qq_line()
+library(cowplot)
+plot_grid(p31, p32)
+
+set.seed(191213)
+inside<-replicate(B, {
+  x<-sample(h, N, replace=F)
+  x_hat<-mean(x)
+  se_hat<-sd(x)/sqrt(N)
+  return(c(x_hat, se_hat))
+})
+d3<-as.data.frame(t(inside))
+d3<-d3%>%
+  rename(x_hat=V1, se_hat=V2)%>%
+  mutate(ci_low=x_hat-pnorm(0.975)*se_hat, ci_high=x_hat+pnorm(0.975)*se_hat, 
+         is_ci=ifelse(mu<=ci_high&mu>=ci_low, T, F), n=seq(1, nrow(d3)))
+mean(d3$is_ci)
+
+p33<-d3[1:100,]%>%
+  ggplot(aes(x_hat, n, col=is_ci))+
+  geom_point()+
+  geom_errorbarh(xmin=d3$ci_low[1:100], xmax=d3$ci_high[1:100])+
+  geom_vline(xintercept=mu)
+p33
+```
+
+많이 편안해졌습니다. 
+이제 qq-plot은 거의 직선에 가까워졌구요, 신뢰구간도 81% 정도까지, 꽤나 높은 수준으로 적중하게 되었습니다.
+
+이렇게 총 3번의 시뮬레이션을 했는데, N이 커짐에 따라 어떤 차이가 나타나는지 한번에 놓고 비교해 볼게요.
+
+```{r}
+p13<-p13 + theme(legend.position="none") + ggtitle("N=5")
+p23<-p23 + theme(legend.position="none") + ggtitle("N=50")
+p33<-p33 + theme(legend.position="none") + ggtitle("N=500")
+plot_grid(p13, p23, p33, ncol=3)
+```
+
+먼저 x-axis를 봅시다. 플롯만 보면 ci가 n이 커질 수록 넓어진다고 잘못 해석할 수 있겠지만, 사실 그게 아니라 xlim이 줄어들고 있네요. 즉, 전체적으로 se가 더 줄어들어서 상대적으로 정확히 mu 근처에 x_hat이 포진하고 있다는 의미겠죠.
+
+샘플 사이즈가 커질 수록 잘 예측한다는 건 그냥 당연한 사실이겠죠?
+
+네, 끝입니다. 더 다양한 통계 이야기는 기통 guide와 ppt를 참고하는 걸로 해요. 개인적으로 se와 sd의 차이만 잘 잡고 있어도 단순한 평균예측은 잘 할 수 있을 것 같네요. 끝!
