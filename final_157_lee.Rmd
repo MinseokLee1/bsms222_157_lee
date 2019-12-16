@@ -1,0 +1,222 @@
+---
+title: "bsms222_final"
+output: html_notebook
+---
+
+Q1. From the dataset `heights` in the `dslabs` package, please describe the distribution of male and female heights. If you pick a female at random, what is the probability that she is 61 inches or shorter? 
+
+```{r}
+head(heights)
+```
+
+```{r}
+library(tidyverse)
+library(dslabs)
+data("heights")
+hm<-heights%>%
+  filter(sex=="Male")
+hf<-heights%>%
+  filter(sex=="Female")
+```
+
+hm은 남성의 키, hf는 여성의 키이다. 각각 독립된 sample로 볼 수 있으며, n이 충분히 크고 random하게 선택된 샘플이므로 정규분포로 근사할 것으로 예측된다. 확인을 위해 각각의 histogram과 qq-plot을 그려보도록 한다.
+
+먼저 남성 키의 분포를 보자.
+```{r}
+p11<-hm%>%
+  ggplot(aes(height))+
+  geom_histogram(bins = 30, col='black')
+p12<-hm%>%
+  ggplot(aes(sample=height))+
+  geom_qq()+
+  geom_qq_line()
+library(cowplot)
+plot_grid(p11, p12)
+```
+남성 키의 경우, 양 극단을 제외하고는 비교적 qqline과 일치한다는 점에서 분포의 분위수가 정규분포와 상당히 일치한다고 볼 수 있다. 남성 키는 정규분포에 근사한다.
+
+여성 키의 분포를 보자.
+```{r}
+p21<-hf%>%
+  ggplot(aes(height))+
+  geom_histogram(bins = 30, col='black')
+p22<-hf%>%
+  ggplot(aes(sample=height))+
+  geom_qq()+
+  geom_qq_line()
+plot_grid(p21, p22)
+```
+여성 키의 경우에도 양 극단이 qqline과는 좀 멀어져있긴 하지만, 전체적으로는 비교적 직선과 잘 맞는 경향을 보이므로 정규분포에 충분히 근사한다고 할 수 있다.
+
+샘플 내의 여성 중 한명을 뽑았을 때 그 키가 61인치 이하일 확률을 계산해보자.
+```{r}
+x<-hf%>%
+  filter(height<=61)%>%
+  nrow()
+x/nrow(hf)
+```
+
+실제 샘플 내에서 계산했을 때 위와 같은 결과를 얻을 수 있다. 위의 여성 키의 분포와 관련지어 생각해보면, 이 확률은 여성 키가 완전한 정규분포를 따를 때 61인치보다 작을 확률에 근사한다.
+```{r}
+pnorm(61, mean(hf$height), sd(hf$height))
+```
+
+
+Q2. For American Roulette, there are 19 reds, 16 blacks and 3 greens. The payout for winning on green is 15 dollars. You create a random variable that is the sum of your winnings after betting on green 1000 times. Start your code by setting the seed to 1. Describe your random variable (e.g. the expected value, the standard error). Then, create a Monte Carlo simulation that generates 1,000 outcomes of a random variable, and then describe your result.
+
+```{r}
+set.seed(1)
+N<-1000
+x<-sum(sample(c(15,-1), size = N, replace=T, prob=c(3/38, 35/38)))
+x
+```
+
+x는 확률변수 X의 결과 중 하나로, 실제 내가 게임을 해서 얻거나 잃은 베팅 결과이다. 실제 시행한 값이며, 시행의 결과 X=x는 set.seed(1)에 따라 결정되었다. 이 확률변수 X에 대한 기댓값과 standard error는 다음과 같이 얻을 수 있다.
+
+```{r}
+p<-3/38
+E_X<-N*(15*p+(-1)*(1-p))
+se_X<-sqrt(N)*abs(15-(-1))*sqrt(p*(1-p))
+E_X; se_X
+```
+
+한 번의 시행에서는 (15*p+(-1)*(1-p)) 라는 기댓값을 얻을 수 있지만, 확률변수 X는 1000번 게임을 진행했을 때 얻는 결과이므로 기댓값과 se에도 모두 N씩 곱해줬다. 따라서 다음과 같은 결과를 얻을 수 있다.
+
+반복수 1000번으로 몬테카를로 시뮬레이션을 시행하면 다음과 같은 결과를 얻는다.
+```{r}
+x<-replicate(B, {
+  x<-sum(sample(c(15,-1), size = N, replace=T, prob=c(3/38, 35/38)))
+  return(x)
+})
+mean(x); sd(x)
+```
+
+이상의 결과는 확률 변수 X를 1000번 구했을 때 그 값들의 평균과 표준 편차를 구한 것이다. 이를 통해 위에서 구한 X에 대한 기댓값과 parameter로서의 se와 상당히 가까운 값을 얻을 수 있다. 반복수 B가 증가함에 따라 그 분포는 모집단의 값에 상당히 근사한다는 것을 알 수 있다.
+
+Q3. From the poll example, we will create a Monte Carlo simulation for p=0.45. You will compare the sampling size (N) for 10, 1000, and the repeat size (B) for 100, 10000. So you should have four combinations (10N x 100B, 1000N x 100B, 10N x 10000B, 1000N x 10000B). Please describe your Monte Carlo simulation results, and compare four combinations.
+
+우선 상황을 설정하면, 실제로 p가 0.45라는 건 신만이 아는 정보다(=parameter). 우리는 각각의 몬테카를로 시행을 통해 이걸 추정하는 것이다.
+
+샘플링 후, 95% CI plot을 그려서 얼마나 잘 적중하는지 확인해보자. 보기 쉽게 반복수에서 상위 100개의 결과만 확인한다.
+
+1. 10N x 100B
+
+```{r}
+N<-10
+B<-100
+p<-0.45
+x1<-replicate(B, {
+  x<-sample(c(0, 1), size=N, replace=T, prob=c(1-p, p))
+  x_hat<-mean(x)
+  se_hat<-sqrt(x_hat*(1-x_hat)/N)
+  return(c(x_hat, se_hat))
+})
+
+d<-t(x1)
+d<-as.data.frame(d)%>%
+  rename(x_hat=V1, se_hat=V2)%>%
+  mutate(ci_low=x_hat-pnorm(0.975)*se_hat, ci_high=x_hat+pnorm(0.975)*se_hat, 
+         is_ci=ifelse(p<=ci_high&p>=ci_low, T, F), n=seq(1, nrow(d)))
+mean(d$is_ci)
+
+p1<-d[1:100,]%>%
+  ggplot(aes(x_hat, n, col=is_ci))+
+  geom_point()+
+  geom_errorbarh(xmin=d$ci_low[1:100], xmax=d$ci_high[1:100])+
+  geom_vline(xintercept=p)
+```
+
+2. 1000N x 100B
+
+```{r}
+N<-1000
+B<-100
+p<-0.45
+x1<-replicate(B, {
+  x<-sample(c(0, 1), size=N, replace=T, prob=c(1-p, p))
+  x_hat<-mean(x)
+  se_hat<-sqrt(x_hat*(1-x_hat)/N)
+  return(c(x_hat, se_hat))
+})
+
+d<-t(x1)
+d<-as.data.frame(d)%>%
+  rename(x_hat=V1, se_hat=V2)%>%
+  mutate(ci_low=x_hat-pnorm(0.975)*se_hat, ci_high=x_hat+pnorm(0.975)*se_hat, 
+         is_ci=ifelse(p<=ci_high&p>=ci_low, T, F), n=seq(1, nrow(d)))
+mean(d$is_ci)
+
+p2<-d[1:100,]%>%
+  ggplot(aes(x_hat, n, col=is_ci))+
+  geom_point()+
+  geom_errorbarh(xmin=d$ci_low[1:100], xmax=d$ci_high[1:100])+
+  geom_vline(xintercept=p)
+```
+
+3. 10N x 10000B
+
+```{r}
+N<-10
+B<-10000
+p<-0.45
+x1<-replicate(B, {
+  x<-sample(c(0, 1), size=N, replace=T, prob=c(1-p, p))
+  x_hat<-mean(x)
+  se_hat<-sqrt(x_hat*(1-x_hat)/N)
+  return(c(x_hat, se_hat))
+})
+
+d<-t(x1)
+d<-as.data.frame(d)%>%
+  rename(x_hat=V1, se_hat=V2)%>%
+  mutate(ci_low=x_hat-pnorm(0.975)*se_hat, ci_high=x_hat+pnorm(0.975)*se_hat, 
+         is_ci=ifelse(p<=ci_high&p>=ci_low, T, F), n=seq(1, nrow(d)))
+mean(d$is_ci)
+
+p3<-d[1:100,]%>%
+  ggplot(aes(x_hat, n, col=is_ci))+
+  geom_point()+
+  geom_errorbarh(xmin=d$ci_low[1:100], xmax=d$ci_high[1:100])+
+  geom_vline(xintercept=p)
+```
+
+4. 1000N x 10000B
+
+```{r}
+N<-1000
+B<-10000
+p<-0.45
+x1<-replicate(B, {
+  x<-sample(c(0, 1), size=N, replace=T, prob=c(1-p, p))
+  x_hat<-mean(x)
+  se_hat<-sqrt(x_hat*(1-x_hat)/N)
+  return(c(x_hat, se_hat))
+})
+
+d<-t(x1)
+d<-as.data.frame(d)%>%
+  rename(x_hat=V1, se_hat=V2)%>%
+  mutate(ci_low=x_hat-pnorm(0.975)*se_hat, ci_high=x_hat+pnorm(0.975)*se_hat, 
+         is_ci=ifelse(p<=ci_high&p>=ci_low, T, F), n=seq(1, nrow(d)))
+mean(d$is_ci)
+
+p4<-d[1:100,]%>%
+  ggplot(aes(x_hat, n, col=is_ci))+
+  geom_point()+
+  geom_errorbarh(xmin=d$ci_low[1:100], xmax=d$ci_high[1:100])+
+  geom_vline(xintercept=p)
+```
+
+5. plot
+
+```{r}
+p1<-p1+theme(legend.position="none") + ggtitle("10N x 100B")
+p2<-p2+theme(legend.position="none") + ggtitle("1000N x 100B")
+p3<-p3+theme(legend.position="none") + ggtitle("10N x 10000B")
+p4<-p4+theme(legend.position="none") + ggtitle("1000N x 10000B")
+plot_grid(p1, p2, p3, p4)
+```
+
+먼저 각 df 밑에 mean(is_ci)의 결과값을 보자. 전체 반복수 중 ci안에 p가 있는 것의 비율을 의미한다. 같은 반복수(B) 내에선 N의 값이 증가함에 다라 0.45에서 0.54로, 0.4713에서 0.6087로 각각 적중한 비율이 증가했음을 볼 수 있다. 또한, 같은 sample size(N) 내에선 반복수 B의 값이 증가함에 따라 0.45에서 0.4713으로, 0.54에서 0.6087로 각각 증가했음을 볼 수 있다. 따라서 반복수와 sample size는 모두 같은 신뢰 수준으로 계산된 ci에서라도 각각 증가할수록 parameter를 더 정확히 예측할 수 있음을 확인할 수 있다.
+
+또한 플롯을 보면, 왼쪽 두 플롯(N=10)에 비해 오른쪽 두 플롯(N=1000)이 더 xlim 너비가 작음을 볼 수 있다. 이는 se가 sample size가 커짐에 따라 줄어드므로 ci도 더 좁게 나타나기 때문인데, 이를 통해 sample size가 커질 수록 더욱 정확한 값으로, 신뢰구간에 parameter가 들어오는 확률이 같은 경우에도(즉, B에 차이가 있는 경우에도) 보다 더 작은 err 내에서 parametr를 정확히 예측할 수 있음을 알 수 있다.
